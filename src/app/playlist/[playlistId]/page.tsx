@@ -8,27 +8,40 @@ import {getTimeLength} from "@/app/utils/timeManipulator";
 
 const AudioPlayerSkeleton = () => {
     return (
-        <>
-            <div className="flex">
-                <div className="w-16 bg-gray-300 h-16 animate-pulse"></div>
-                <div className="flex flex-col flex-grow justify-center px-2 gap-1">
-                    <h2 className="bg-gray-300 h-6 w-2/3 animate-pulse"></h2>
-                    <div className="flex gap-1 items-center">
-                        <button className="bg-gray-300 h-8 w-8 rounded-full animate-pulse"></button>
-                        <button className="bg-gray-300 h-8 w-8 rounded-full animate-pulse"></button>
-                        <button className="bg-gray-300 h-8 w-8 rounded-full animate-pulse"></button>
+        <div className="flex gap-2">
+            <div className="h-32 w-32 min-w-max animate-pulse bg-gray-300"></div>
+            <div className="flex flex-grow flex-col">
+                <div className="flex flex-grow flex-col justify-center gap-1 px-2">
+                    <h2 className="h-6 w-2/3 animate-pulse bg-gray-300"></h2>
+                    <div className="flex items-center gap-1">
+                        <button className="h-8 w-8 animate-pulse rounded-full bg-gray-300"></button>
+                        <button className="h-8 w-8 animate-pulse rounded-full bg-gray-300"></button>
+                        <button className="h-8 w-8 animate-pulse rounded-full bg-gray-300"></button>
                     </div>
                 </div>
+                <div className="flex items-center gap-2">
+                    <div className="h-2 w-96 animate-pulse bg-gray-300"></div>
+                    <label className="h-6 w-10 animate-pulse bg-gray-300"></label>
+                </div>
             </div>
-            <div className="flex items-center gap-2">
-                <div className="bg-gray-300 h-2 w-96 animate-pulse"></div>
-                <label className="bg-gray-300 h-6 w-10 animate-pulse"></label>
-            </div>
-        </>
+        </div>
     )
 }
 
-
+const PlaylistSkeleton = () => {
+    return (
+        <div className="flex h-52 flex-col gap-1 overflow-scroll">
+            {[...Array(10)].map((_, index) => (
+                <div key={'skeleton playlist' + index + 1} className="rounded-lg bg-neutral-500">
+                    <button className="flex w-full items-center gap-6 p-3">
+                        <div className="text-neutral-400">{index + 1}</div>
+                        <div className="h-6 w-2/3 animate-pulse bg-gray-300 text-left"></div>
+                        <div className="ml-auto h-6 w-10 animate-pulse bg-gray-300 text-neutral-400"></div>
+                    </button>
+                </div>))}
+        </div>
+    )
+}
 
 export default function Page(): React.JSX.Element {
     const params = useParams()
@@ -38,6 +51,8 @@ export default function Page(): React.JSX.Element {
 
     const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
     const [currentTrack, setCurrentTrack] = useState<SpotifyApi.TrackObjectFull | undefined>()
+
+    const playlistDom = useRef<HTMLDivElement | null>(null)
 
     useEffect(() => {
         fetch(`/api/playlist?id=${playlistId}`)
@@ -59,25 +74,40 @@ export default function Page(): React.JSX.Element {
 
         setCurrentTrackIndex(localIndex)
         setCurrentTrack(tracks?.at(localIndex) ?? undefined)
+
+        playlistDom.current?.scrollTo({
+            top: localIndex * 52,
+            behavior: 'smooth'
+        })
     }
 
     return (
-        <main className="flex flex-col w-screen h-screen justify-center items-center content-center bg-gray-800 text-white fill-white">
-            <div className="w-full max-w-sm">
-                {currentTrack ?
-                    <AudioPlayer track={currentTrack}
-                                 onNext={() => changeTrack('next')}
-                                 onPrev={() => changeTrack('prev')}></AudioPlayer> :
-                    <AudioPlayerSkeleton></AudioPlayerSkeleton>}
-                <div>
-                    {tracks?.map((track: any, index: number) => (
-                        <div key={track.uri}>
-                            <button onClick={() => {
-                                setCurrentTrackIndex(index)
-                                setCurrentTrack(tracks?.at(index) ?? undefined)
-                            }}>{index + 1} {track.name} {getTimeLength(track.duration_ms)}</button>
-                        </div>
-                    ))}
+        <main
+            className="flex h-screen w-screen flex-col content-center items-center justify-center bg-neutral-800 fill-white text-white">
+            <div className="flex w-full max-w-xl flex-col overflow-clip rounded-xl bg-neutral-500 shadow-xl">
+                <div className="p-6">
+                    {currentTrack ?
+                        <AudioPlayer track={currentTrack}
+                                     onNext={() => changeTrack('next')}
+                                     onPrev={() => changeTrack('prev')}></AudioPlayer> :
+                        <AudioPlayerSkeleton></AudioPlayerSkeleton>}
+                </div>
+                <div className="bg-neutral-600 p-3">
+                    {tracks ? (<div className="flex h-52 flex-col gap-1 overflow-scroll" ref={playlistDom}>
+                        {tracks?.map((track: any, index: number) => (
+                            <div key={track.uri}
+                                 className={"rounded-lg hover:bg-neutral-500 " + (currentTrack?.uri === track.uri && 'bg-neutral-700')}>
+                                <button className="flex w-full items-center gap-6 p-3" onClick={() => {
+                                    setCurrentTrackIndex(index)
+                                    setCurrentTrack(tracks?.at(index) ?? undefined)
+                                }}>
+                                    <div className="text-neutral-400">{index + 1}</div>
+                                    <div className="text-left">{track.name}</div>
+                                    <div className="ml-auto text-neutral-400">{getTimeLength(track.duration_ms)}</div>
+                                </button>
+                            </div>
+                        ))}
+                    </div>) : <PlaylistSkeleton></PlaylistSkeleton>}
                 </div>
             </div>
         </main>

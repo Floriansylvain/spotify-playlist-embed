@@ -6,7 +6,11 @@ import Image from "next/image";
 import './audioPlayer.css'
 import {getTimeLength} from "@/app/utils/timeManipulator";
 
-export default function AudioPlayer(props: { track?: SpotifyApi.TrackObjectFull, onNext: () => void, onPrev: () => void }): React.JSX.Element {
+export default function AudioPlayer(props: {
+    track?: SpotifyApi.TrackObjectFull,
+    onNext: () => void,
+    onPrev: () => void
+}): React.JSX.Element {
     const audio = useRef<HTMLAudioElement | null>(null)
     const rangeInput = useRef<HTMLInputElement | null>(null)
 
@@ -56,21 +60,32 @@ export default function AudioPlayer(props: { track?: SpotifyApi.TrackObjectFull,
     }, [props.track]);
 
     return (
-        <div>
+        <div className="flex flex-col gap-2">
             <audio ref={audio} className="hidden">
                 <source src={props.track?.preview_url ?? undefined} type="audio/mpeg"/>
                 Your browser does not support the audio element.
             </audio>
 
-            <div className="flex">
-                <div className="w-16">
-                    <Image src={props.track?.album.images[0].url as string} width={64} height={64}
-                           alt="album cover"/>
+            <div className="flex gap-2">
+                <div className="w-32 min-w-max">
+                    <Image src={props.track?.album.images[1].url as string} width={128} height={128}
+                           alt="album cover"
+                           className="rounded-lg shadow-lg"/>
                 </div>
-                <div className="flex flex-col flex-grow justify-center px-2 gap-1">
-                    <h2>{props.track?.name} {props.track?.preview_url == null ?
+                <div className="flex flex-grow flex-col justify-center gap-1 px-2">
+                    <a className="cursor-pointer" href={props.track?.external_urls.spotify} target="_blank">
+                        <Image alt="spotify track redirect" src="/Spotify_logo_with_text.svg"
+                               className="ml-auto w-10" width={40} height={12}/>
+                    </a>
+                    <h2 className="text-2xl">{props.track?.name} {props.track?.preview_url == null ?
                         <b>(no preview available)</b> : undefined}</h2>
-                    <div className="flex gap-1 items-center">
+                    <h3>
+                        {props.track?.artists.map((artist, index) => {
+                            return <span
+                                key={artist.id}>{artist.name}{props.track?.artists[index + 1] !== undefined ? ', ' : undefined}</span>
+                        })}
+                    </h3>
+                    <div className="flex items-center gap-1">
                         <button onClick={props.onPrev}>
                             <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24">
                                 <path
@@ -96,14 +111,14 @@ export default function AudioPlayer(props: { track?: SpotifyApi.TrackObjectFull,
                             </svg>
                         </button>
                     </div>
+                    <div className="flex items-center gap-2">
+                        <input id="default-range" type="range" min={0} max={30000} value={progress}
+                               aria-valuenow={progress} onChange={onRangeInputChange}
+                               className="h-2 w-full appearance-none rounded-lg"
+                               ref={rangeInput}/>
+                        <label htmlFor='default-range'>{getTimeLength(progress ?? 0)}</label>
+                    </div>
                 </div>
-            </div>
-            <div className="flex items-center gap-2">
-                <input id="default-range" type="range" min={0} max={30000} value={progress}
-                       aria-valuenow={progress} onChange={onRangeInputChange}
-                       className="appearance-none w-full h-2"
-                       ref={rangeInput}/>
-                <label htmlFor='default-range'>{getTimeLength(progress ?? 0)}</label>
             </div>
         </div>
     )
